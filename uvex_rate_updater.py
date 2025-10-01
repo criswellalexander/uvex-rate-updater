@@ -226,12 +226,12 @@ if __name__ == '__main__':
 
     # Add arguments
     parser.add_argument('trigger_estimate', metavar='trigger_estimate', type=float, help='The original median trigger estimate. You do not need the original error bars.')
-    parser.add_argument('new_bns_rate', metavar='new_bns_rate', type=str, help='The desired updated BNS rate, in Mpc^-3 yr^-1, given as [median, lower 90 percent CI, upper 90 percent CI].')
+    parser.add_argument('new_bns_rate', metavar='new_bns_rate', type=str, help='The desired updated BNS rate, in Gpc^-3 yr^-1, given as [median, lower 90 percent CI, upper 90 percent CI].')
 
     parser.add_argument('--get_obs', action='store_true', help="Whether to also provided an updated estimate of successful KN counterpart observations. Requires --success_rate. Default False.")
 
     
-    parser.add_argument('--old_bns_rate', type=str, default="[210,90,450]", help="The original BNS rate, in Mpc^-3 yr^-1, given as [median, lower 90 percent CI, upper 90 percent CI]. Defaults to the GWTC-3 rate ([210,90,450]).")
+    parser.add_argument('--old_bns_rate', type=str, default="[210,90,450]", help="The original BNS rate, in Gpc^-3 yr^-1, given as [median, lower 90 percent CI, upper 90 percent CI]. Defaults to the GWTC-3 rate ([210,90,450]).")
     parser.add_argument('--duration', type=float, default=1.5, help="Duration of the observing run in years. Default 1.5 years (as used in Criswell+24).")
     parser.add_argument('--success_rate', type=float, default=None, help="ToO strategy success rate (see Criswell+24). Required if get_obs is set.")
     parser.add_argument('--fmt_out', type=str, default='latex', help="Output format ('latex' or 'list'). 'latex' returns a LaTeX string, 'list' returns [median, lower 90 percent CI, upper 90 percent CI]. Default 'latex'.")
