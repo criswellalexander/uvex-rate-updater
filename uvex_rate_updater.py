@@ -226,7 +226,7 @@ if __name__ == '__main__':
 
     # Add arguments
     parser.add_argument('trigger_estimate', metavar='trigger_estimate', type=float, help='The original median trigger estimate. You do not need the original error bars.')
-    parser.add_argument('new_bns_rate', metavar='new_bns_rate', type=str, help='The desired updated BNS rate, in Gpc^-3 yr^-1, given as [median, lower 90 percent CI, upper 90 percent CI].')
+    parser.add_argument('new_bns_rate', metavar='new_bns_rate', type=str, help='The desired updated BNS rate, in Gpc^-3 yr^-1, given as [median, lower 90 percent CI, upper 90 percent CI]. (Also accepted: "gwtc-4", which will use the GWTC-4.0 FullPop-4.0 rate.)')
 
     parser.add_argument('--get_obs', action='store_true', help="Whether to also provided an updated estimate of successful KN counterpart observations. Requires --success_rate. Default False.")
 
@@ -238,7 +238,11 @@ if __name__ == '__main__':
     
     # execute parser
     args = parser.parse_args()
-
+    
+    ## GWTC-4.0 BNS rate
+    if args.new_bns_rate == 'gwtc-4':
+        args.new_bns_rate = "[89, 22, 248]"
+    
     ## run workhorse function
     result = update_trigger_estimates([args.trigger_estimate,None,None],eval(args.new_bns_rate),duration=args.duration,bns_rate_old=eval(args.old_bns_rate),get_obs=args.get_obs,success_rate=args.success_rate,fmt_in='list',fmt_out=args.fmt_out)
 
