@@ -74,11 +74,17 @@ def f2s(val):
     '''
     return "{:0.1f}".format(val)
 
+def f2is(val):
+    '''
+    Simple function to convert a float to a string with integer rounding.
+    '''
+    return("{}".format(int(np.round(val))))
+
 
 ## go from triggers to successful observations, given a success rate
     
 def triggers2observations(triggers,success_rate,duration,
-                          bns_rate=[210,90,450],fmt_in='list',fmt_out='list'):
+                          bns_rate=[210,90,450],fmt_in='list',fmt_out='list',as_int=False):
     '''
     Simple function to compute an estimated number of successful ToO observations, 
     given a ToO trigger count (with error bars), a success rate, the duration of the simulated run,
@@ -96,6 +102,7 @@ def triggers2observations(triggers,success_rate,duration,
                                           try to parse a list of floats as [median, lower90, upper90].
     fmt_out (str)                      : Output format. If 'latex', will output a latex string; if 'list',
                                           will return a list of floats.
+    as_int (bool)                      : Whether to return the output as integers. Default False.
                                           
     Returns
     ---------------
@@ -126,19 +133,28 @@ def triggers2observations(triggers,success_rate,duration,
     
     result_med, result_low, result_high = sim_norm*observed_med, sim_norm*observed_low, sim_norm*observed_high
     
-    error_high = f2s(result_high-result_med)
-    error_low = f2s(result_med-result_low)
+    if as_int:
+        f2string = f2is
+    else:
+        f2string = f2s
+
+    error_high = f2string(result_high-result_med)
+    error_low = f2string(result_med-result_low)
     
     if fmt_out == 'latex':
-        return f2s(result_med)+"^{+"+error_high+"}_{-"+error_low+"}"
+        return f2string(result_med)+"^{+"+error_high+"}_{-"+error_low+"}"
     elif fmt_out == 'list':
-        return [result_med, result_low, result_high]
+        if as_int:
+            return [np.round(res) for res in [result_med, result_low, result_high]]
+        else:
+            return [result_med, result_low, result_high]
     else:
         raise ValueError("fmt_in must be 'latex' or 'list'.")
     
 
 ## workhorse function
-def update_trigger_estimates(triggers,bns_rate_new,duration=1.5,bns_rate_old=[210,90,450],get_obs=False,success_rate=None,fmt_in='list',fmt_out='list'):
+def update_trigger_estimates(triggers,bns_rate_new,duration=1.5,bns_rate_old=[210,90,450],
+                             get_obs=False,success_rate=None,fmt_in='list',fmt_out='list',as_int=False):
     '''
     Simple function to reweight a UVEX trigger count estimate to account for an updated BNS rate.
     
@@ -156,6 +172,7 @@ def update_trigger_estimates(triggers,bns_rate_new,duration=1.5,bns_rate_old=[21
                                           try to parse a list of floats as [median, lower90, upper90].
     fmt_out (str)                      : Output format. If 'latex', will output a latex string; if 'list',
                                           will return a list of floats.
+    as_int (bool)                      : Whether to return the output as integers. Default False.
     
     Returns
     -------------------------
@@ -192,13 +209,21 @@ def update_trigger_estimates(triggers,bns_rate_new,duration=1.5,bns_rate_old=[21
     updated_trigger_med, updated_trigger_low, updated_trigger_high = trigger_med_norm*update_med, trigger_med_norm*update_low, trigger_med_norm*update_high
     updates = [updated_trigger_med, updated_trigger_low, updated_trigger_high]
     
-    error_high = f2s(updated_trigger_high-updated_trigger_med)
-    error_low = f2s(updated_trigger_med-updated_trigger_low)
-    
+    if as_int:
+        f2string = f2is
+    else:
+        f2string = f2s
+
+    error_high = f2string(updated_trigger_high-updated_trigger_med)
+    error_low = f2string(updated_trigger_med-updated_trigger_low)
+
     if fmt_out == 'latex':
-        trigger_result = f2s(updated_trigger_med)+"^{+"+error_high+"}_{-"+error_low+"}"
+        trigger_result = f2string(updated_trigger_med)+"^{+"+error_high+"}_{-"+error_low+"}"
     elif fmt_out == 'list':
-        trigger_result = updates
+        if as_int:
+            trigger_result = [int(np.round(u)) for u in updates]
+        else:
+            trigger_result = updates
     else:
         raise ValueError("fmt_in must be 'latex' or 'list'.")
     
@@ -206,8 +231,8 @@ def update_trigger_estimates(triggers,bns_rate_new,duration=1.5,bns_rate_old=[21
         if success_rate is None:
             raise TypeError("If get_obs is set to True, you must specify success_rate.")
         
-        observation_result = triggers2observations(updates,success_rate,duration,bns_rate=bns_rate_new,fmt_in='list',fmt_out=fmt_out)
-        
+        observation_result = triggers2observations(updates,success_rate,duration,bns_rate=bns_rate_new,
+                                                   fmt_in='list',fmt_out=args.fmt_out,as_int=as_int)
         return trigger_result, observation_result
     else:
         return trigger_result
@@ -235,7 +260,8 @@ if __name__ == '__main__':
     parser.add_argument('--duration', type=float, default=1.5, help="Duration of the observing run in years. Default 1.5 years (as used in Criswell+24).")
     parser.add_argument('--success_rate', type=float, default=None, help="ToO strategy success rate (see Criswell+24). Required if get_obs is set.")
     parser.add_argument('--fmt_out', type=str, default='latex', help="Output format ('latex' or 'list'). 'latex' returns a LaTeX string, 'list' returns [median, lower 90 percent CI, upper 90 percent CI]. Default 'latex'.")
-    
+    parser.add_argument('--as_int',action='store_true', help="Whether to round the output to the nearest integer.")
+
     # execute parser
     args = parser.parse_args()
     
@@ -244,7 +270,10 @@ if __name__ == '__main__':
         args.new_bns_rate = "[89, 22, 248]"
     
     ## run workhorse function
-    result = update_trigger_estimates([args.trigger_estimate,None,None],eval(args.new_bns_rate),duration=args.duration,bns_rate_old=eval(args.old_bns_rate),get_obs=args.get_obs,success_rate=args.success_rate,fmt_in='list',fmt_out=args.fmt_out)
+    result = update_trigger_estimates([args.trigger_estimate,None,None],eval(args.new_bns_rate),duration=args.duration,bns_rate_old=eval(args.old_bns_rate),
+                                      get_obs=args.get_obs,success_rate=args.success_rate,
+                                      fmt_in='list',fmt_out=args.fmt_out,as_int=args.as_int)
+
 
     ## display results
     if args.get_obs:
